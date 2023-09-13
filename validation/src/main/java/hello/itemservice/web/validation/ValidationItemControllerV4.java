@@ -5,6 +5,7 @@ import hello.itemservice.domain.item.ItemRepository;
 import hello.itemservice.domain.item.SaveCheck;
 import hello.itemservice.domain.item.UpdateCheck;
 import hello.itemservice.web.validation.form.ItemSaveForm;
+import hello.itemservice.web.validation.form.ItemUpdateForm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,7 +53,7 @@ public class ValidationItemControllerV4 {
 		model.addAttribute("item", item);
 		return "validation/v4/item";
 	}
-	
+
 	@GetMapping("/{itemId}/edit")
 	public String editForm(@PathVariable Long itemId, Model model) {
 		Item item = itemRepository.findById(itemId);
@@ -65,7 +66,7 @@ public class ValidationItemControllerV4 {
 		model.addAttribute("item", new Item());
 		return "validation/v4/addForm";
 	}
-	
+
 	@PostMapping("/add")
 	public String addItem(@Validated @ModelAttribute("item") ItemSaveForm form, BindingResult bindingResult,
 			RedirectAttributes redirectAttributes) {
@@ -91,11 +92,12 @@ public class ValidationItemControllerV4 {
 		return "redirect:/validation/v4/items/{itemId}";
 	}
 
-	//@PostMapping("/{itemId}/edit")
-	public String edit(@PathVariable Long itemId, @Validated @ModelAttribute Item item, BindingResult bindingResult) {
+	// @PostMapping("/{itemId}/edit")
+	public String edit(@PathVariable Long itemId, @Validated @ModelAttribute("item") ItemUpdateForm form,
+			BindingResult bindingResult) {
 		// 특정 필드 예외가 아닌 전체 예외
-		if (item.getPrice() != null && item.getQuantity() != null) {
-			int resultPrice = item.getPrice() * item.getQuantity();
+		if (form.getPrice() != null && form.getQuantity() != null) {
+			int resultPrice = form.getPrice() * form.getQuantity();
 			if (resultPrice < 10000) {
 				bindingResult.reject("totalPriceMin", new Object[] { 10000, resultPrice }, null);
 			}
@@ -104,12 +106,17 @@ public class ValidationItemControllerV4 {
 			log.info("errors={}", bindingResult);
 			return "validation/v4/editForm";
 		}
-		itemRepository.update(itemId, item);
+		Item itemParam = new Item();
+		itemParam.setItemName(form.getItemName());
+		itemParam.setPrice(form.getPrice());
+		itemParam.setQuantity(form.getQuantity());
+		itemRepository.update(itemId, itemParam);
 		return "redirect:/validation/v4/items/{itemId}";
 	}
-	
+
 	@PostMapping("/{itemId}/edit")
-	public String edit2(@PathVariable Long itemId, @Validated(value = UpdateCheck.class) @ModelAttribute Item item, BindingResult bindingResult) {
+	public String edit2(@PathVariable Long itemId, @Validated(value = UpdateCheck.class) @ModelAttribute Item item,
+			BindingResult bindingResult) {
 		// 특정 필드 예외가 아닌 전체 예외
 		if (item.getPrice() != null && item.getQuantity() != null) {
 			int resultPrice = item.getPrice() * item.getQuantity();
